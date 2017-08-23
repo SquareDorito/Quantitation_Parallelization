@@ -1,0 +1,25 @@
+
+source('E:/Temp/RLogisticScore/pseq.r')
+source('E:/Temp/RLogisticScore/outmodsFile.r')
+source('E:/Temp/RLogisticScore/getmass.r')
+source('E:/Temp/RLogisticScore/getavgmass.r')
+source('E:/Temp/RLogisticScore/vectorFind.r')
+source('E:/Temp/RLogisticScore/getNumAfter.r')
+source('E:/Temp/RLogisticScore/isolate.r')
+source('E:/Temp/RLogisticScore/pepcal.r')
+source('E:/Temp/RLogisticScore/findTop.r')
+source('E:/Temp/RLogisticScore/uscore.r')
+source('E:/Temp/RLogisticScore/filterFile.r')
+source('E:/Temp/RLogisticScore/validate.r')
+source('E:/Temp/RLogisticScore/makeValidArray.r')
+source('E:/Temp/RLogisticScore/parse_dt_out.r')
+source('E:/Temp/RLogisticScore/matComp.r')
+source('E:/Temp/RLogisticScore/predictMain.r')
+source('E:/Temp/RLogisticScore/PredictGui.r')
+source('E:/Temp/RLogisticScore/logreg2.R')
+source('E:/Temp/RLogisticScore/commandMain.R')
+source('E:/Temp/RLogisticScore/combineDtaOut.r')
+dtaDir='E:/Temp/dta'
+parDir='E:/Temp/LogisticScoreInput'
+combineDtaOut(dtaDir,parDir)    ##need to clear folder \\proteome\Data\LogisticTempFiles\DtaOut and ...\Validations first!
+#q(save="no")
