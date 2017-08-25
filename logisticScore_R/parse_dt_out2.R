@@ -10,53 +10,61 @@ parse_dt_out2<-function(curdir){
 ## sets R's current working directory
 #setwd(curdir)
 
-parsefiles <- list.files(pattern=".txt")       
-dtafiles <- list.files(pattern=".dta")
-
-# number of dta files to scan
-totalfiles <- length(parsefiles)
-print(noquote(paste("Processing ",totalfiles, " files")))
-
-# variables to find
-hit1<-matrix(-1,9,1)#matrix(-1,nrow=totalfiles,ncol=9)
-hit2<-matrix(-1,6,1)#matrix(-1,nrow=totalfiles,ncol=6)
-hit=1                     
-xtemp=0
-ytemp=0
-xtempv=0
-ytempv=0
-xyCoord=NULL
-vars=NULL
-Fname=NULL
-varstemp=NULL
-# generate variables for logistic regression
-for (i in 1:totalfiles) {
-
-    currentFile= parsefiles[i]#"BSA_HRP2_LTMSLTMSMS_121405_154555.8053.8053.1.out" 
-    
+  parsefiles <- list.files(pattern=".txt")       
+  dtafiles <- list.files(pattern=".dta")
+  
+  # number of dta files to scan
+  totalfiles <- length(parsefiles)
+  print(noquote(paste("Processing ",totalfiles, " files")))
+  
+  # variables to find
+  hit1<-matrix(-1,9,1)#matrix(-1,nrow=totalfiles,ncol=9)
+  hit2<-matrix(-1,6,1)#matrix(-1,nrow=totalfiles,ncol=6)
+  hit=1                     
+  xtemp=0
+  ytemp=0
+  xtempv=0
+  ytempv=0
+  xyCoord=NULL
+  vars=NULL
+  Fname=NULL
+  varstemp=NULL
+  
+  library(parallel)
+  library(xcms)
+  
+  cores<-detectCores()
+  print(paste("Number of cores detected: ", cores,sep=""))
+  
+  if(as.numeric(cores)<3){
+    print("running 1 job. Not enough cores to parallelize.")
+    for (i in 1:totalfiles) {
+        
+        currentFile= parsefiles[i]#"BSA_HRP2_LTMSLTMSMS_121405_154555.8053.8053.1.out" 
+        
         print(noquote(paste(currentFile,": ",i," of ",totalfiles," files")))
-
+        
         par1 <- file(description=parsefiles[i], open="rt")#, encoding="utf-16")
         par2 <- readLines(par1,warn=F)
         dta1 <- file(description=dtafiles[i], open="rt")
         dta2 <- readLines(dta1)
-# 		print(par2)
-# 		print(dta2)  
-		if(dta2[2]==""){
-			print("fixing .dta file")
-			dtaind=1:(length(dta2)/2)
-			dtaind=2*dtaind
-			dtaind=dtaind-1
-			dta2=dta2[dtaind]	
-		}
+        # 		print(par2)
+        # 		print(dta2)  
+        if(dta2[2]==""){
+          print("fixing .dta file")
+          dtaind=1:(length(dta2)/2)
+          dtaind=2*dtaind
+          dtaind=dtaind-1
+          dta2=dta2[dtaind]	
+        }
         xtempv=NULL
         ytempv=NULL
         for(a in 1:length(dta2)){
-            temp=strsplit(dta2[a],split=' ',fixed=T)
-            ytemp=temp[[1]][2] #may be an incorrect label
-            xtemp=temp[[1]][1] #may be an incorrect label
-            xtempv[a]=as.numeric(xtemp)
-            ytempv[a]=as.numeric(ytemp)        
+          temp=strsplit(dta2[a],split=' ',fixed=T)
+          ytemp=temp[[1]][2] #may be an incorrect label
+          xtemp=temp[[1]][1] #may be an incorrect label
+          xtempv[a]=as.numeric(xtemp)
+          ytempv[a]=as.numeric(ytemp)        
         }
         xyCoord=cbind(xtempv,ytempv)
         dMods=par2[4]
@@ -70,20 +78,20 @@ for (i in 1:totalfiles) {
         lineHit2=7
         pep2temp=strsplit(par2[lineHit2],split="\t",fixed=T)
         pep2temp=pep2temp[[1]][length(pep2temp[[1]])-1]
-	if(length(pep2temp)>0){
-		pep2=strsplit(pep2temp,split=".",fixed=T)[[1]][2] 
-			#print(peptemp)
-		#print(pep) 
-			#print(pep2temp)
-		#print(pep2)
-		
-		while((filterseq(pep)==filterseq(pep2))&&(lineHit2<length(par2))){
-			lineHit2=lineHit2+1
-			pep2temp=strsplit(par2[lineHit2],split="\t",fixed=T)
-			pep2temp=pep2temp[[1]][length(pep2temp[[1]])-1]
-			pep2=strsplit(pep2temp,split=".",fixed=T)[[1]][2] 
-		}
-	}	
+        if(length(pep2temp)>0){
+          pep2=strsplit(pep2temp,split=".",fixed=T)[[1]][2] 
+          #print(peptemp)
+          #print(pep) 
+          #print(pep2temp)
+          #print(pep2)
+          
+          while((filterseq(pep)==filterseq(pep2))&&(lineHit2<length(par2))){
+            lineHit2=lineHit2+1
+            pep2temp=strsplit(par2[lineHit2],split="\t",fixed=T)
+            pep2temp=pep2temp[[1]][length(pep2temp[[1]])-1]
+            pep2=strsplit(pep2temp,split=".",fixed=T)[[1]][2] 
+          }
+        }	
         firstHitData=strsplit(par2[6],split="\t",fixed=T)[[1]]
         #print(firstHitData)
         hit1[1]=as.numeric(firstHitData[1])# hit1 (m+h)+
@@ -97,7 +105,7 @@ for (i in 1:totalfiles) {
         hit1[8]=as.numeric(par2[3])# M+H+mass (exp Mass)
         splitPep=strsplit(pep,split="",fixed=T)[[1]]
         hit1[9]=length(splitPep)-sum(match(splitPep,"[",nomatch=0)+match(splitPep,"]",nomatch=0)+match(splitPep,"*",nomatch=0)+match(splitPep,"#",nomatch=0)+match(splitPep,"@",nomatch=0)+match(splitPep,"^",nomatch=0)+match(splitPep,"$",nomatch=0)+match(splitPep,"~",nomatch=0))# hit1 AA (length of Seq)
-                
+        
         secondHitData=strsplit(par2[lineHit2],split="\t",fixed=T)[[1]]
         hit2[1]=as.numeric(secondHitData[1])# hit1 (m+h)+
         hit2[2]=as.numeric(secondHitData[2])# hit1 deltCn
@@ -106,7 +114,7 @@ for (i in 1:totalfiles) {
         hit2[5]=as.numeric(secondHitData[5])# hit1 Ions Numerator
         hit2[6]=as.numeric(secondHitData[6])# hit1 Ions Denominator 
         if(is.na(secondHitData[6])||secondHitData[6]==""){hit2[6]=as.numeric(secondHitData[7])}
-                
+        
         varstemp[1]=as.numeric(par2[1])#(tempScan[[1]][2])#scan --good
         varstemp[2]=hit1[7]  ##tempScan[[1]][4] #charge --good
         varstemp[3]=xyCoord[1,1] #exp mass  ##Needs to be fixed?
@@ -123,9 +131,9 @@ for (i in 1:totalfiles) {
         
         ############################ xcorrPrime calculation end
         varstemp[10]=hit2[2]*10 #delta cn hit2  --good
-	if(is.na(varstemp[10])){
-		varstemp[10]=1		# if no second hit, set dcn2 to 1 arbitrary
-	}
+        if(is.na(varstemp[10])){
+          varstemp[10]=1		# if no second hit, set dcn2 to 1 arbitrary
+        }
         varstemp[11]=hit1[1] # mhmass(1) --good
         #print(varstemp[11])
         varstemp[12]=10*hit1[5]/hit1[6] #ionsratio    ## 100* in paper 10* in code?? --good
@@ -139,8 +147,8 @@ for (i in 1:totalfiles) {
         #print(bob)
         varstemp[15]=(1e6)*abs((xyCoord[1,1]-hit2[1])/xyCoord[1,1]) #dmass2      --good!!
         if(is.na(varstemp[15])){
-		varstemp[15]=1000		# if no second hit, set dmass2 to 1000ppm arbitrary
-	}
+          varstemp[15]=1000		# if no second hit, set dmass2 to 1000ppm arbitrary
+        }
         ########################## delta mass 1 and delta mass 2 calc end
         
         #varstemp[15]=(hit1[i,3]-hit2[i,3])/hit1[i,3] # dc2 or delta c2
@@ -148,38 +156,38 @@ for (i in 1:totalfiles) {
         ######################### start calculate number of K and R in sequence   #--good
         numK=length(splitPep)-sum(as.numeric(is.na(pmatch(splitPep,"K",duplicates.ok=TRUE))))
         numR=length(splitPep)-sum(as.numeric(is.na(pmatch(splitPep,"R",duplicates.ok=TRUE))))
-              ## there is a cleaner way to do this using logic in the phosSites calc
+        ## there is a cleaner way to do this using logic in the phosSites calc
         varstemp[16]=numK+numR-1 #KR  --good
         #print(varstemp[16])
-              ## note that in the matlab code we subract 1 from this value; not sure if that is needed 
-              ## here, but i think it is to account for the theoretical terminal K/R
+        ## note that in the matlab code we subract 1 from this value; not sure if that is needed 
+        ## here, but i think it is to account for the theoretical terminal K/R
         
         ######################## end calculate number of K and R in sequence
         
         ##################### ps pt py and phos sites calc start        
-# !!!!! #May 29 2008.  Resume correcting below.    
-		dm=getDMods(dMods)
-		logical1=dm>79
-		logical2=dm<=80
-		phosSymbol=names(dm[logical1&logical2]) 
-		numPS=0
-		numPT=0
-		numPY=0
-		if(length(phosSymbol)>0){ 
-			phosIndex=match(splitPep,phosSymbol,nomatch=0)
-			phosIndex=as.logical(c(phosIndex[2:length(phosIndex)],phosIndex[1]))
-			phosSites=splitPep[phosIndex]
-			if(length(phosSites)>0){
-				for(j in 1:length(phosSites)){
-					if(phosSites[j]=="S"){numPS=numPS+1}
-					if(phosSites[j]=="T"){numPT=numPT+1}
-					if(phosSites[j]=="Y"){numPY=numPY+1}
-				}
-			}
-		}
-		
-
-		varstemp[17]=numPS+numPT+numPY
+        # !!!!! #May 29 2008.  Resume correcting below.    
+        dm=getDMods(dMods)
+        logical1=dm>79
+        logical2=dm<=80
+        phosSymbol=names(dm[logical1&logical2]) 
+        numPS=0
+        numPT=0
+        numPY=0
+        if(length(phosSymbol)>0){ 
+          phosIndex=match(splitPep,phosSymbol,nomatch=0)
+          phosIndex=as.logical(c(phosIndex[2:length(phosIndex)],phosIndex[1]))
+          phosSites=splitPep[phosIndex]
+          if(length(phosSites)>0){
+            for(j in 1:length(phosSites)){
+              if(phosSites[j]=="S"){numPS=numPS+1}
+              if(phosSites[j]=="T"){numPT=numPT+1}
+              if(phosSites[j]=="Y"){numPY=numPY+1}
+            }
+          }
+        }
+        
+        
+        varstemp[17]=numPS+numPT+numPY
         varstemp[18]=numPS  #--good
         varstemp[19]=numPT  #--good
         varstemp[20]=numPY  #--good(assumed as previous 2 were good)
@@ -202,14 +210,14 @@ for (i in 1:totalfiles) {
         #print(varstemp[22])
         varstemp[23]=median(normalized) #median --good   
         varstemp[24]=mean(normalized) #mean     --good   
-                
+        
         #################### end number mean number fancymean median calc                                                  
         
         #################### bscore & sumscore calc start
         
-            ## note that hit1[i,8] is supposed to be what is MHMass(1)
-            ## in the matlab code seqprocess.m and varstemp[2] corresponds to
-            ## chargeState in that same code
+        ## note that hit1[i,8] is supposed to be what is MHMass(1)
+        ## in the matlab code seqprocess.m and varstemp[2] corresponds to
+        ## chargeState in that same code
         isoMass=(varstemp[11]+1)/varstemp[2]     ##-good
         MHH3PO4=isoMass-(98/varstemp[2])##MminusH(1)    ##-good
         MHHPO3=isoMass-(80/varstemp[2])          ##-good
@@ -221,7 +229,7 @@ for (i in 1:totalfiles) {
         loners=isolate(xyCoord)  #-good
         #print(xyCoord)
         #print(loners[[1]])
-#        print(min(varstemp[13],length(loners[[1]][,1])))
+        #        print(min(varstemp[13],length(loners[[1]][,1])))
         
         top=findTop(min(varstemp[13],length(loners[[1]][,1])),loners[[1]]) #-good
         #print(top)               
@@ -253,12 +261,12 @@ for (i in 1:totalfiles) {
               peaks=NULL
               #print(locs[[k]])
               for(a in 1:length(locs[[k]])){
-                      if(locs[[k]][a]!=0){peaks=cbind(peaks,t(as.matrix(top[locs[[k]][a],])))}   ##changed!!                                
+                if(locs[[k]][a]!=0){peaks=cbind(peaks,t(as.matrix(top[locs[[k]][a],])))}   ##changed!!                                
               }
               inten[k]=max(peaks[,2])
             }
           }
-        
+          
           varstemp[25] = (2*found[1])+(found[2]+found[3])+(.5*sum(found[4:5]))#bscore   --(not sure)--presumed correct
           varstemp[26]=sum(inten)#sumscore                                              --(not sure)--presumed correct
         }
@@ -266,11 +274,11 @@ for (i in 1:totalfiles) {
         
         #################### noa nda nsa toa tda tsa etc... calc start
         pepc=pepcalc(pep,charge,dMods,sMods)
- 		#print(pepc)
+        #print(pepc)
         MminusH=c(MHH3PO4,MH2H3PO4)
-
+        
         us=uscore(top,pepc,MminusH,varstemp[2],varstemp[17],phosSymbol)
-
+        
         
         #################### noa nda nsa toa tda tsa etc... calc end
         if(firstHitData[8]=="R"){reDb=1}
@@ -278,20 +286,41 @@ for (i in 1:totalfiles) {
         
         vars[[i]]=cbind(as.matrix(us),t(as.matrix(varstemp)),reDb)
         Fname[i]=parsefiles[i]
-    	close(par1)
+        close(par1)
         close(dta1)
-        }
-        
-retVars=NULL
-
-retVars[[1]]=vars
-retVars[[2]]=Fname
-
-return(retVars)
+      }
+  }else{
+    jobs<-cores-1
+    print(paste("Running ",jobs," jobs in parallel.",sep=""))
+    cl <- makeCluster(mc <- getOption("cl.cores", jobs), outfile="")
+    clusterExport(c1=c1,varlist=c())
+    
+    invisible(clusterEvalQ(cl, {
+      suppressPackageStartupMessages({
+        library(xcms)
+        library(parallel)
+      })
+    }))
+    
+    invisible(clusterApplyLB(c1))
+    #todo
+    
+    stopCluster(c1)
+    removeOldFiles(progressdir)
+    gc()
+  }
+  
+  # generate variables for logistic regression
+  
+          
+  retVars=NULL
+  
+  retVars[[1]]=vars
+  retVars[[2]]=Fname
+  
+  return(retVars)
 
 }
-
-
 
 filterseq<-function(pepseq){
 	var=gsub("[[:punct:]]","",pepseq)
