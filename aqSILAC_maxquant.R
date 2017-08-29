@@ -1,0 +1,19 @@
+setwd('C:\\Users\\knoh1\\Documents\\Quantitation_Parallelization')
+msmsfile=read.table('msms.txt',sep='\t',header=TRUE)
+num_rows=nrow(msmsfile)
+for(i in 1:num_rows){
+  counter=i+1
+  if(counter>num_rows){
+    break
+  }
+  while(msmsfile[i,"Modified.sequence"]==msmsfile[counter,"Modified.sequence"]){
+    if(msmsfile[i,"Labeling.State"]!=msmsfile[counter,"Labeling.State"]){
+      cat(paste(msmsfile[i,"Modified.sequence"],"/",msmsfile[i,"m.z"],"/",msmsfile[i,"Precursor.Intensity"],sep=""),file=paste("file",msmsfile[i,"Scan.number"],".txt"),sep="")
+    }
+    counter=counter+1
+  }
+  i=counter
+  if(i>num_rows){
+    break
+  }
+}

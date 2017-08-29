@@ -1,3 +1,11 @@
+currentDir <- function() {
+  initial.options <- commandArgs(trailingOnly = FALSE)
+  file.arg.name <- "--file="
+  script.name <- sub(file.arg.name, "", initial.options[grep(file.arg.name, initial.options)])
+  script.basename <- gsub("\\\\", "/", dirname(script.name))
+  return(script.basename)
+}
+
 parse_dt_out2<-function(curdir){
 #######################################
  ### R code for parsing in dta and out files                       
