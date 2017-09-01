@@ -38,6 +38,7 @@ parse_dt_out2<-function(curdir){
   vars<<-NULL
   Fname<<-NULL
   varstemp<<-NULL
+  retVars<<-NULL
   
   suppressPackageStartupMessages({
     suppressWarnings(suppressMessages(library(parallel)))
@@ -310,7 +311,7 @@ parse_dt_out2<-function(curdir){
                                   "hit1","hit2","xtemp","ytemp","xtempv","ytempv","xyCoord",
                                   "hit","totalfiles","dtafiles","getDMods","leng","isolate",
                                   "vectorFind","findTop","pepcalc","uscore","getSMods",
-                                  "getavgmass","getmass","filterseq"))
+                                  "getavgmass","getmass","filterseq","retVars"),envir=.GlobalEnv)
     #print("hello3")
     invisible(clusterEvalQ(cl, {
       suppressPackageStartupMessages({
@@ -318,10 +319,10 @@ parse_dt_out2<-function(curdir){
       })
     }))
     #print("hello4")
-    invisible(clusterApplyLB(cl,parsefiles,function(name){
-      #print("hello5")
+    templist<-invisible(parLapply(cl,parsefiles,function(name){
+      #print(name)
       counter<-match(c(name),parsefiles)
-      print(counter,sep="")
+      print(counter,sep="\n")
       currentFile=name
       par1<-file(description=currentFile,open="rt")
       par2<-readLines(par1,warn=F)
@@ -569,21 +570,30 @@ parse_dt_out2<-function(curdir){
       #write.table(name,file=paste("testing/",counter,"_fname.txt",sep=""),col.names=FALSE,row.names=FALSE)
       vars[[counter]]<<-cbind(as.matrix(us),t(as.matrix(varstemp)),reDb)
       Fname[counter]<<-name
-      write.table(vars[[counter]],file=paste("testing/vars",counter,".txt",sep=""),sep="\t",col.names=FALSE)
-      write(Fname[counter],file="testing/fname.txt",append=TRUE)
+      #write.table(vars[[counter]],file=paste("testing/vars",counter,".txt",sep=""),sep="\t",col.names=FALSE,row.names=FALSE)  
+      #write.table(vars[[counter]],file=paste("testing/vars",counter,".txt",sep=""),sep="\t",col.names=FALSE,row.names=FALSE)
+      #write(name,file="testing/fname.txt",append=TRUE)
       #print(name)
-      #print("DONE",sep="\n")
       close(par1)
       close(dta1)
+      return(cbind(vars[[counter]],Fname[counter]))
     }))
     #todo
   }
   
+  # for(i in 1:totalfiles){
+  #   vars[[i]]<<-read.table(paste("testing/vars",i,".txt",sep=""),sep="\t",header=FALSE)
+  # }
+  # conn<-file("testing/fname.txt",open="r")
+  # linn<-readLines(conn)
+  # for(i in 1:length(linn)){
+  #   Fname[i]=linn[i]
+  #   if(i==1){
+  #     print(F)
+  #   }
+  # }
+  # close(conn)
   # generate variables for logistic regression
-  retVars=NULL
-  for(i in 1:totalfiles){
-    write.table(vars[[i]],file=paste("testing/aftervars",i,".txt",sep=""),sep="\t",col.names=FALSE)
-  }
   # tempretvars=NULL
   # for(i in 1:totalfiles){
   #   tempretvars[i]=read.table(paste("testing/vars",i,".txt",sep=""),sep="\t")
@@ -595,11 +605,16 @@ parse_dt_out2<-function(curdir){
   #   
   # }
   #write(Fname,file="processedfname.txt",sep=",")
-  retVars[[1]]=vars
-  retVars[[2]]=Fname
   
+  for(i in 1:totalfiles){
+    retVars<-rbind(retVars,templist[[i]][1,])
+  }
+  rownames(retVars)=NULL
+  colnames(retVars)=NULL
   stopCluster(cl) 
   gc()
+  
+  write.table(templist[[1]][1,],file="testing/sample1.txt")
   
   return(retVars)
 }
